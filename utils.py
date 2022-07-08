@@ -6,6 +6,7 @@ import torch
 import yaml
 from model import LeNet
 import matplotlib.pyplot as plt
+import random
 
 def parse_data(csv_file, train_test):
     # This function aims to convert MNIST dataset from csv file redistribution to images.
@@ -49,12 +50,8 @@ def inference(img):
     img = torch.unsqueeze(torch.Tensor(img), 0) # convert to tensor and add a batch dimension
     img = torch.unsqueeze(img, 0)
     pred = torch.squeeze(lenet(img), 0) # squeeze out the batch dimension
-    img = torch.squeeze(img, 0)
-
-    # plot the input image with predict result as title
-    plt.imshow(img.permute(1, 2, 0), cmap='gray')
-    plt.title(f"predict result: {pred.argmax(0).item()}")
-    plt.show()
+    
+    return pred.argmax(0).item()
 
 
 if __name__ == "__main__":
@@ -64,5 +61,27 @@ if __name__ == "__main__":
     # print("Done.")
 
     # testing code for inference
-    img = cv2.imread(os.path.join("MNIST", "test", "0", "0042.jpg"), cv2.IMREAD_GRAYSCALE)
-    inference(img)
+
+    # initialize a dictionary for randomly selecting images
+    category_count_dict = {}
+    for i in range(10):
+        category_count_dict[i] = len(os.listdir(os.path.join("MNIST", "test", str(i))))
+
+    number_of_imgs = 9
+    rows = 3
+    cols = 3
+    fig = plt.figure()
+    for i in range(number_of_imgs):
+        # randomly select a test image and read it
+        category = random.randint(0, 9)
+        filename = str(random.randint(0, category_count_dict[category] - 1)).zfill(4) + ".jpg"
+        img = cv2.imread(os.path.join("MNIST", "test", str(category), filename), cv2.IMREAD_GRAYSCALE)
+
+        # get the inference result and plot a subplot
+        pred_res = inference(img)
+        fig.add_subplot(rows, cols, i+1)
+        plt.imshow(img, cmap='gray')
+        plt.axis('off')
+        plt.title(f"predict result: {pred_res}")
+
+    plt.show()
