@@ -12,6 +12,7 @@ import torch.nn as nn
 import time
 
 torch.manual_seed(42)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # prepare dataloader
 train_dataset = mnist(os.path.join("MNIST", "csv", "mnist_train.csv"))
@@ -23,7 +24,7 @@ test_dataloader = DataLoader(train_dataset, batch_size=32)
 with open("config.yaml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 lenet = LeNet(config)
-# lenet.load_state_dict(torch.load("saves.pth"))
+lenet.to(device)
 
 # prepare loss function
 loss_fn = nn.CrossEntropyLoss()
@@ -36,9 +37,11 @@ def train_loop(dataloader, model, loss_fn, optimizer):
 
     model.train() # I suppose this is necessary because i used batch norm layer
     for batch, (X, y) in enumerate(dataloader):
+        X = X.to(device)
+        y = y.type(torch.cuda.LongTensor) if torch.cuda.is_available() else y.type(torch.LongTensor)
         pred = model(X)
         # not sure why y has to be long tensor? Plus it seems that the pred don't need to be changed.
-        loss = loss_fn(pred, y.type(torch.LongTensor))
+        loss = loss_fn(pred, y)
 
         # back propagation
         optimizer.zero_grad()
@@ -58,8 +61,10 @@ def test_loop(dataloader, model, loss_fn):
     model.eval() # I suppose this is necessary because i used batch norm layer
     with torch.no_grad():
         for X, y in dataloader:
+            X = X.to(device)
+            y = y.type(torch.cuda.LongTensor) if torch.cuda.is_available() else y.type(torch.LongTensor)
             pred = model(X)
-            test_loss += loss_fn(pred, y.type(torch.LongTensor)).item() # same problem here.
+            test_loss += loss_fn(pred, y).item() # same problem here.
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
 
     test_loss /= num_batches
