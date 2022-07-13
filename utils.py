@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+import progressbar
 import cv2
 import torch
 import yaml
@@ -21,19 +22,21 @@ def parse_data(csv_file, train_test):
     if not os.path.exists(root_path):
         os.makedirs(root_path)
 
-    for vector in data:
-        label = vector[0]
+    with progressbar.ProgressBar(max_value=len(data)) as bar:
+        for i, vector in enumerate(data):
+            label = vector[0]
 
-        # put every image to its corresponding sub directories according to its number
-        sub_path = os.path.join(root_path, str(label))
-        if not os.path.exists(sub_path):
-            os.makedirs(sub_path)
+            # put every image to its corresponding sub directories according to its number
+            sub_path = os.path.join(root_path, str(label))
+            if not os.path.exists(sub_path):
+                os.makedirs(sub_path)
 
-        # write to jpg file
-        img = np.reshape(vector[1:], (28, -1))
-        img_path = os.path.join(sub_path, str(counts[label]).zfill(4)) + ".jpg"
-        cv2.imwrite(img_path, img)
-        counts[label] += 1 # increment corresponding count
+            # write to jpg file
+            img = np.reshape(vector[1:], (28, -1))
+            img_path = os.path.join(sub_path, str(counts[label]).zfill(4)) + ".jpg"
+            cv2.imwrite(img_path, img)
+            counts[label] += 1 # increment corresponding count
+            bar.update(i)
 
 
 def inference(img):
@@ -55,13 +58,15 @@ def inference(img):
 
 
 if __name__ == "__main__":
-    # testing code for parse_data
+    # testing code for parse_data, uncomment code below to parse csv data
+    # print("Parsing training data")
     # parse_data(os.path.join("MNIST", "csv", "mnist_train.csv"), "train")
+    # print("Parsing testing data")
     # parse_data(os.path.join("MNIST", "csv", "mnist_test.csv"), "test")
     # print("Done.")
 
-    # testing code for inference
 
+    # testing code for inference, which assumes you already parsed the csv data
     # initialize a dictionary for randomly selecting images
     category_count_dict = {}
     for i in range(10):
